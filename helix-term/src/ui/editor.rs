@@ -83,6 +83,10 @@ impl EditorView {
         surface: &mut Surface,
         is_focused: bool,
     ) {
+        if view.shows_bufferline {
+            Self::render_bufferline(editor, view, view.area.with_height(1), surface);
+        }
+
         let inner = view.inner_area(doc);
         let area = view.area;
         let theme = &editor.theme;
@@ -655,7 +659,7 @@ impl EditorView {
     }
 
     /// Render bufferline at the top
-    pub fn render_bufferline(editor: &Editor, viewport: Rect, surface: &mut Surface) {
+    pub fn render_bufferline(editor: &Editor, view: &View, viewport: Rect, surface: &mut Surface) {
         let scratch = PathBuf::from(SCRATCH_BUFFER_NAME); // default filename to use for scratch buffer
         surface.clear_with(
             viewport,
@@ -676,9 +680,13 @@ impl EditorView {
             .unwrap_or_else(|| editor.theme.get("ui.statusline.inactive"));
 
         let mut x = viewport.x;
-        let current_doc = view!(editor).doc;
+        let current_doc = view.doc;
 
-        for doc in editor.documents() {
+        let mut local_docs = view.local_documents();
+        local_docs.sort_unstable(); // Keep tabs in stable order
+
+        for doc_id in local_docs {
+            let doc = editor.documents.get(&doc_id).unwrap();
             let fname = doc
                 .path()
                 .unwrap_or(&scratch)
@@ -1607,14 +1615,6 @@ impl Component for EditorView {
         surface.set_style(area, cx.editor.theme.get("ui.background"));
         let config = cx.editor.config();
 
-        // check if bufferline should be rendered
-        use helix_view::editor::BufferLine;
-        let use_bufferline = match config.bufferline {
-            BufferLine::Always => true,
-            BufferLine::Multiple if cx.editor.documents.len() > 1 => true,
-            _ => false,
-        };
-
         let mut area = area;
 
         // TODO: This may need to get looked at!
@@ -1631,18 +1631,11 @@ impl Component for EditorView {
             area = area.clip_right(right);
         }
 
-        // -1 for commandline and -1 for bufferline
-        let mut editor_area = area.clip_bottom(1);
-        if use_bufferline {
-            editor_area = editor_area.clip_top(1);
-        }
+        // -1 for commandline
+        let editor_area = area.clip_bottom(1);
 
         // if the terminal size suddenly changed, we need to trigger a resize
         cx.editor.resize(editor_area);
-
-        if use_bufferline {
-            Self::render_bufferline(cx.editor, area.with_height(1), surface);
-        }
 
         for (view, is_focused) in cx.editor.tree.views() {
             let doc = cx.editor.document(view.doc).unwrap();

@@ -135,6 +135,7 @@ pub struct View {
     pub jumps: JumpList,
     // documents accessed from this view from the oldest one to last viewed one
     pub docs_access_history: Vec<DocumentId>,
+    pub shows_bufferline: bool,
     /// the last modified files before the current one
     /// ordered from most frequent to least frequent
     // uses two docs because we want to be able to swap between the
@@ -177,6 +178,7 @@ impl View {
             area: Rect::default(), // will get calculated upon inserting into tree
             jumps: JumpList::new((doc, Selection::point(0))), // TODO: use actual sel
             docs_access_history: Vec::new(),
+            shows_bufferline: false,
             last_modified_docs: [None, None],
             object_selections: Vec::new(),
             gutters,
@@ -193,11 +195,19 @@ impl View {
     }
 
     pub fn inner_area(&self, doc: &Document) -> Rect {
-        self.area.clip_left(self.gutter_offset(doc)).clip_bottom(1) // -1 for statusline
+        let mut area = self.area.clip_left(self.gutter_offset(doc)).clip_bottom(1); // -1 for statusline
+        if self.shows_bufferline {
+            area = area.clip_top(1);
+        }
+        area
     }
 
     pub fn inner_height(&self) -> usize {
-        self.area.clip_bottom(1).height.into() // -1 for statusline
+        let mut area = self.area.clip_bottom(1); // -1 for statusline
+        if self.shows_bufferline {
+            area = area.clip_top(1);
+        }
+        area.height.into()
     }
 
     pub fn inner_width(&self, doc: &Document) -> u16 {

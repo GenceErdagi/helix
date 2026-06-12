@@ -1768,6 +1768,12 @@ impl Editor {
             let doc = doc_mut!(self, &view.doc);
             view.sync_changes(doc);
             view.gutters = config.gutters.clone();
+            let use_bufferline = match config.bufferline {
+                BufferLine::Always => true,
+                BufferLine::Multiple => view.local_documents().len() > 1,
+                BufferLine::Never => false,
+            };
+            view.shows_bufferline = use_bufferline;
             view.ensure_cursor_in_view(doc, config.scrolloff)
         }
     }
