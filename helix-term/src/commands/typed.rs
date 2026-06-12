@@ -18,6 +18,54 @@ use ui::completers::{self, Completer};
 
 use std::fmt::Write;
 
+fn grow_view_width(
+    cx: &mut compositor::Context,
+    _args: Args,
+    event: PromptEvent,
+) -> anyhow::Result<()> {
+    if event != PromptEvent::Validate {
+        return Ok(());
+    }
+    cx.editor.resize_view(helix_view::tree::Direction::Right, 1);
+    Ok(())
+}
+
+fn shrink_view_width(
+    cx: &mut compositor::Context,
+    _args: Args,
+    event: PromptEvent,
+) -> anyhow::Result<()> {
+    if event != PromptEvent::Validate {
+        return Ok(());
+    }
+    cx.editor.resize_view(helix_view::tree::Direction::Left, 1);
+    Ok(())
+}
+
+fn grow_view_height(
+    cx: &mut compositor::Context,
+    _args: Args,
+    event: PromptEvent,
+) -> anyhow::Result<()> {
+    if event != PromptEvent::Validate {
+        return Ok(());
+    }
+    cx.editor.resize_view(helix_view::tree::Direction::Down, 1);
+    Ok(())
+}
+
+fn shrink_view_height(
+    cx: &mut compositor::Context,
+    _args: Args,
+    event: PromptEvent,
+) -> anyhow::Result<()> {
+    if event != PromptEvent::Validate {
+        return Ok(());
+    }
+    cx.editor.resize_view(helix_view::tree::Direction::Up, 1);
+    Ok(())
+}
+
 #[derive(Clone)]
 pub struct TypableCommand {
     pub name: &'static str,
@@ -3652,6 +3700,38 @@ pub const TYPABLE_COMMAND_LIST: &[TypableCommand] = &[
             positionals: (0, Some(0)),
             ..Signature::DEFAULT
         },
+    },
+    TypableCommand {
+        name: "grow-view-width",
+        aliases: &[],
+        doc: "Grow focused container width",
+        fun: grow_view_width,
+        completer: CommandCompleter::none(),
+        signature: Signature::DEFAULT,
+    },
+    TypableCommand {
+        name: "shrink-view-width",
+        aliases: &[],
+        doc: "Shrink focused container width",
+        fun: shrink_view_width,
+        completer: CommandCompleter::none(),
+        signature: Signature::DEFAULT,
+    },
+    TypableCommand {
+        name: "grow-view-height",
+        aliases: &[],
+        doc: "Grow focused container height",
+        fun: grow_view_height,
+        completer: CommandCompleter::none(),
+        signature: Signature::DEFAULT,
+    },
+    TypableCommand {
+        name: "shrink-view-height",
+        aliases: &[],
+        doc: "Shrink focused container height",
+        fun: shrink_view_height,
+        completer: CommandCompleter::none(),
+        signature: Signature::DEFAULT,
     },
     TypableCommand {
         name: "hsplit",

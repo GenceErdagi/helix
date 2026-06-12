@@ -479,6 +479,10 @@ impl MappableCommand {
         goto_prev_change, "Goto previous change",
         goto_first_change, "Goto first change",
         goto_last_change, "Goto last change",
+        grow_view_width, "Grow focused container width",
+        shrink_view_width, "Shrink focused container width",
+        grow_view_height, "Grow focused container height",
+        shrink_view_height, "Shrink focused container height",
         goto_line_start, "Goto line start",
         goto_line_end, "Goto line end",
         goto_column, "Goto column",
@@ -923,6 +927,26 @@ fn goto_line_start(cx: &mut Context) {
             Movement::Move
         },
     )
+}
+
+fn grow_view_width(cx: &mut Context) {
+    cx.editor
+        .resize_view(helix_view::tree::Direction::Right, cx.count());
+}
+
+fn shrink_view_width(cx: &mut Context) {
+    cx.editor
+        .resize_view(helix_view::tree::Direction::Left, cx.count());
+}
+
+fn grow_view_height(cx: &mut Context) {
+    cx.editor
+        .resize_view(helix_view::tree::Direction::Down, cx.count());
+}
+
+fn shrink_view_height(cx: &mut Context) {
+    cx.editor
+        .resize_view(helix_view::tree::Direction::Up, cx.count());
 }
 
 fn goto_next_buffer(cx: &mut Context) {

@@ -2178,6 +2178,10 @@ impl Editor {
         self.tree.transpose();
     }
 
+    pub fn resize_view(&mut self, direction: tree::Direction, count: usize) {
+        self.tree.resize_view(direction, count);
+    }
+
     pub fn should_close(&self) -> bool {
         self.tree.is_empty()
     }
