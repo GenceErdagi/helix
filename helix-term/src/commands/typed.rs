@@ -230,21 +230,21 @@ fn buffer_close_by_ids_impl(
 ) -> anyhow::Result<()> {
     cx.block_try_flush_writes()?;
 
-    let (modified_ids, modified_names): (Vec<_>, Vec<_>) = doc_ids
-        .iter()
-        .filter_map(|&doc_id| {
-            if let Err(CloseError::BufferModified(name)) = cx.editor.close_document(doc_id, force) {
-                Some((doc_id, name))
-            } else {
-                None
+    let mut modified_ids = Vec::new();
+    let mut modified_names = Vec::new();
+
+    // Check for modified buffers first
+    for &doc_id in doc_ids {
+        if let Some(doc) = cx.editor.documents.get(&doc_id) {
+            if !force && doc.is_modified() {
+                modified_ids.push(doc_id);
+                modified_names.push(doc.display_name().into_owned());
             }
-        })
-        .unzip();
+        }
+    }
 
     if let Some(first) = modified_ids.first() {
         let current = doc!(cx.editor);
-        // If the current document is unmodified, and there are modified
-        // documents, switch focus to the first modified doc.
         if !modified_ids.contains(&current.id()) {
             cx.editor.switch(*first, Action::Replace);
         }
@@ -254,6 +254,38 @@ fn buffer_close_by_ids_impl(
             if modified_names.len() == 1 { "" } else { "s" },
             modified_names,
         );
+    }
+
+    let view_id = view!(cx.editor).id;
+    let mut to_close_globally = Vec::new();
+
+    for &doc_id in doc_ids {
+        // Switch away if it's the active document in the current view
+        let view = cx.editor.tree.get(view_id);
+        if view.doc == doc_id {
+            if let Some(&prev) = view.docs_access_history.last() {
+                cx.editor.switch(prev, Action::Replace);
+            } else {
+                cx.editor.new_file(Action::Replace);
+            }
+        }
+
+        // Remove from current view's history
+        let view = cx.editor.tree.get_mut(view_id);
+        view.remove_document(&doc_id);
+
+        // Check if any view still holds this document
+        let is_in_use = cx.editor.tree.views().any(|(v, _)| {
+            v.doc == doc_id || v.docs_access_history.contains(&doc_id)
+        });
+
+        if !is_in_use {
+            to_close_globally.push(doc_id);
+        }
+    }
+
+    for doc_id in to_close_globally {
+        let _ = cx.editor.close_document(doc_id, force);
     }
 
     Ok(())
@@ -327,17 +359,17 @@ fn buffer_gather_others_impl(editor: &mut Editor, skip_visible: bool) -> Vec<Doc
             .views()
             .map(|view| &view.0.doc)
             .collect::<HashSet<_>>();
-        editor
-            .documents()
-            .map(|doc| doc.id())
+        let view = view!(editor);
+        view.local_documents()
+            .into_iter()
             .filter(|doc_id| !visible_document_ids.contains(doc_id))
             .collect()
     } else {
-        let current_document = &doc!(editor).id();
-        editor
-            .documents()
-            .map(|doc| doc.id())
-            .filter(|doc_id| doc_id != current_document)
+        let view = view!(editor);
+        let current_document = view.doc;
+        view.local_documents()
+            .into_iter()
+            .filter(|doc_id| *doc_id != current_document)
             .collect()
     }
 }
@@ -369,7 +401,7 @@ fn force_buffer_close_others(
 }
 
 fn buffer_gather_all_impl(editor: &mut Editor) -> Vec<DocumentId> {
-    editor.documents().map(|doc| doc.id()).collect()
+    view!(editor).local_documents()
 }
 
 fn buffer_close_all(

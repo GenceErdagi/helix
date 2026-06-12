@@ -1866,12 +1866,17 @@ impl Editor {
             Action::HorizontalSplit | Action::VerticalSplit => {
                 let focus_lost = self.tree.try_get(self.tree.focus).map(|view| view.doc);
                 // copy the current view, unless there is no view yet
-                let view = self
+                let mut view = self
                     .tree
                     .try_get(self.tree.focus)
                     .filter(|v| id == v.doc) // Different Document
                     .cloned()
                     .unwrap_or_else(|| View::new(id, self.config().gutters.clone()));
+                
+                // Do not clone the buffer history into the new split
+                view.docs_access_history.clear();
+                view.last_modified_docs = [None, None];
+
                 let view_id = self.tree.split(
                     view,
                     match action {

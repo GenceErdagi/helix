@@ -636,6 +636,16 @@ impl View {
         self.docs_access_history.retain(|doc| doc != doc_id);
     }
 
+    /// Returns a list of all documents associated with this view, 
+    /// including the currently active document and access history.
+    pub fn local_documents(&self) -> Vec<DocumentId> {
+        let mut docs = self.docs_access_history.clone();
+        if !docs.contains(&self.doc) {
+            docs.push(self.doc);
+        }
+        docs
+    }
+
     // pub fn traverse<F>(&self, text: RopeSlice, start: usize, end: usize, fun: F)
     // where
     //     F: Fn(usize, usize),
