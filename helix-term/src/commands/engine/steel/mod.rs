@@ -1496,6 +1496,17 @@ fn load_editor_api(engine: &mut Engine, generate_sources: bool) {
             },
         )
         .register_fn_with_ctx(CTX, "set-buffer-uri!", set_buffer_uri)
+        .register_fn_with_ctx(CTX, "set-document-delegate!", |cx: &mut Context, doc: DocumentId, delegate: String| {
+            if let Some(doc) = cx.editor.documents.get_mut(&doc) {
+                doc.delegate = Some(delegate);
+            }
+        })
+        .register_fn_with_ctx(CTX, "editor-view-area", |cx: &mut Context, view: ViewId| {
+            cx.editor.tree.view_id_area(view)
+        })
+        .register_fn_with_ctx(CTX, "editor-doc-views", |cx: &mut Context, doc: DocumentId| {
+            cx.editor.tree.views().filter(|(v, _)| v.doc == doc).map(|(v, _)| v.id).collect::<Vec<_>>()
+        })
         .register_fn_with_ctx(CTX, "editor-doc-exists?", cx_document_exists)
         .register_fn_with_ctx(CTX, "editor-switch-action!", cx_switch_action)
         .register_fn_with_ctx(

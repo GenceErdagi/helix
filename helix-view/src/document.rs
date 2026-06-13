@@ -145,6 +145,10 @@ pub struct Document {
     view_data: HashMap<ViewId, ViewData>,
     pub active_snippet: Option<ActiveSnippet>,
 
+    /// A Steel component delegate name for this document. If set, this document
+    /// delegates rendering and input handling to the specified component.
+    pub delegate: Option<String>,
+
     /// Inlay hints annotations for the document, by view.
     ///
     /// To know if they're up-to-date, check the `id` field in `DocumentInlayHints`.
@@ -729,6 +733,7 @@ impl Document {
         Self {
             id: DocumentId::default(),
             active_snippet: None,
+            delegate: None,
             path: None,
             relative_path: OnceCell::new(),
             encoding,
