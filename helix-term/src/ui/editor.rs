@@ -91,6 +91,33 @@ impl EditorView {
         let area = view.area;
         let theme = &editor.theme;
         let config = editor.config();
+        
+        if doc.delegate.is_some() {
+            surface.clear_with(inner, theme.get("ui.background"));
+            
+            // if we're not at the edge of the screen, draw a right border
+            if viewport.right() != view.area.right() {
+                let x = area.right();
+                let border_style = theme.get("ui.window");
+                for y in area.top()..area.bottom() {
+                    surface[(x, y)]
+                        .set_symbol(tui::symbols::line::VERTICAL)
+                        .set_style(border_style);
+                }
+            }
+
+            let statusline_area = view
+                .area
+                .clip_top(view.area.height.saturating_sub(1))
+                .clip_bottom(1); // -1 from bottom to remove commandline
+
+            let mut context =
+                statusline::RenderContext::new(editor, doc, view, is_focused, &self.spinners);
+
+            statusline::render(&mut context, statusline_area, surface);
+            return;
+        }
+
         let loader = editor.syn_loader.load();
 
         let view_offset = doc.view_offset(view.id);
