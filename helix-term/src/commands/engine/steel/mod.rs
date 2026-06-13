@@ -1434,6 +1434,12 @@ fn load_editor_api(engine: &mut Engine, generate_sources: bool) {
 
     module
         .register_fn_with_ctx(CTX, "editor-focus", cx_current_focus)
+        .register_fn_with_ctx(CTX, "editor-view-area", |cx: &mut Context, view: ViewId| {
+            cx.editor.tree.view_id_area(view)
+        })
+        .register_fn_with_ctx(CTX, "set-view-portion!", |cx: &mut Context, view: ViewId, portion: f64| {
+            cx.editor.tree.set_view_portion(view, portion);
+        })
         .register_fn_with_ctx(CTX, "editor-mode", cx_get_mode)
         .register_fn_with_ctx(CTX, "cx->themes", get_themes)
         .register_fn_with_ctx(CTX, "editor-count", |cx: &mut Context| {

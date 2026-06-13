@@ -691,6 +691,34 @@ impl Tree {
         }
     }
 
+    pub fn set_view_portion(&mut self, view_id: ViewId, portion: f64) -> Option<()> {
+        let parent = self.nodes[view_id].parent;
+        if parent == view_id { return None; } // root
+
+        let Content::Container(container) = &mut self.nodes[parent].content else { return None; };
+        let idx = container.children.iter().position(|node| *node == view_id)?;
+        
+        let min = 0.05;
+        let clamped = f64::clamp(portion, min, 1.0 - (container.children.len() - 1) as f64 * min);
+        
+        let diff = clamped - container.children.bounds[idx].portion;
+        container.children.bounds[idx].portion = clamped;
+
+        // Distribute the remaining diff among the rest
+        let remainder_len = container.children.len() - 1;
+        if remainder_len > 0 {
+            let offset = diff / remainder_len as f64;
+            for i in 0..container.children.len() {
+                if i != idx {
+                    container.children.bounds[i].portion -= offset;
+                }
+            }
+        }
+
+        self.recalculate();
+        Some(())
+    }
+
     pub fn transpose(&mut self) {
         let focus = self.focus;
         let parent = self.nodes[focus].parent;
